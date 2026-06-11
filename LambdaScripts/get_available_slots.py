@@ -1,5 +1,6 @@
 import boto3
 import json
+from boto3.dynamodb.conditions import Attr  # 👈 add this import
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table('Slots')
@@ -7,8 +8,7 @@ table = dynamodb.Table('Slots')
 def lambda_handler(event, context):
     try:
         response = table.scan(
-            FilterExpression='isBooked = :b',
-            ExpressionAttributeValues={':b': False}
+            FilterExpression=Attr('isBooked').eq(False)  # 👈 correct way
         )
         slots = response.get('Items', [])
         return {
