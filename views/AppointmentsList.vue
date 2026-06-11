@@ -59,13 +59,24 @@ export default {
   },
   methods: {
     fetchAppointments() {
-      fetch("https://o3mj0xti2i.execute-api.us-east-1.amazonaws.com/prod/appointments")
-        .then(res => res.json())
-        .then(data => {
-          const parsed = JSON.parse(data.body);
-          this.appointments = parsed;
-        });
-    },
+  fetch("https://o3mj0xti2i.execute-api.us-east-1.amazonaws.com/prod/appointments")
+    .then(res => res.json())
+    .then(data => {
+      console.log("Raw API response:", data);
+      if (Array.isArray(data)) {
+        this.appointments = data;
+      } else if (data.body) {
+        this.appointments = typeof data.body === "string"
+          ? JSON.parse(data.body)
+          : data.body;
+      } else {
+        console.error("Unexpected response shape:", data);
+      }
+    })
+    .catch(err => {
+      console.error("Failed to fetch appointments:", err);
+    });
+},
     updateStatus(appointment, newStatus) {
       // Log the full appointment object and its ID
       console.log(" appointment (proxy):", appointment);
