@@ -1,4 +1,3 @@
-
 <template>
   <div>
     <nav class="navbar navbar-light bg-white shadow-sm mb-4">
@@ -7,7 +6,6 @@
         <router-link to="/appointments" class="btn btn-outline-primary">⇆ Switch Page</router-link>
       </div>
     </nav>
-
     <div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
       <div class="card shadow p-5" style="width: 100%; max-width: 700px;">
         <h2 class="text-center mb-4 text-primary">Book an Appointment</h2>
@@ -50,9 +48,23 @@ export default {
     fetch("https://o3mj0xti2i.execute-api.us-east-1.amazonaws.com/prod/slots")
       .then(res => res.json())
       .then(data => {
-        const parsed = JSON.parse(data.body);
-        this.slots = parsed.filter(s => !s.isBooked).map(s => s.slot);
-      });
+        console.log("Slots raw response:", data);
+
+        // Handle both direct array and wrapped { body: "..." } response
+        let parsed;
+        if (Array.isArray(data)) {
+          parsed = data;
+        } else if (data.body) {
+          parsed = typeof data.body === "string" ? JSON.parse(data.body) : data.body;
+        } else {
+          console.error("Unexpected slots response shape:", data);
+          return;
+        }
+
+        // ✅ Use 'slots' to match DynamoDB partition key name
+        this.slots = parsed.filter(s => !s.isBooked).map(s => s.slots);
+      })
+      .catch(err => console.error("Failed to fetch slots:", err));
   },
   methods: {
     submitAppointment() {
@@ -61,11 +73,10 @@ export default {
         symptoms: this.symptoms,
         slot: this.selectedSlot
       };
-
       fetch("https://o3mj0xti2i.execute-api.us-east-1.amazonaws.com/prod/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ body: JSON.stringify(payload) })
+        body: JSON.stringify(payload)  
       })
         .then(res => res.json())
         .then(() => {
